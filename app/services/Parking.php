@@ -55,8 +55,31 @@ class Parking {
         return $response;
     }
 
-    public function unparkCar($type, $plate) {
-        
+    public function unparkCar($plate) {
+        $car = Cars::findfirst([
+            'conditions' => 'license_plate = :plate:',
+            'bind'       => ['plate' => $plate]
+        ]);
+
+        if ($car !== false && ($parkedCar = ParkingLot::getCar($car)) !== false) {
+            $checkOut = date('Y-m-d H:i:s', time());
+
+            // Calculate duration
+            $duration  = ceil((strtotime($checkOut) - strtotime($parkedCar->check_in)) / 60);
+            $halfHours = ceil($duration / 30);
+            $amount    = $halfHours * $this->fee > $this->maximumDaily ? $this->maximumDaily : $halfHours * $this->fee;
+
+            $parkedCar->assign([
+                'check_out' => $checkOut,
+                'duration'  => $duration,
+                'amount'    => $amount
+            ]);
+            $parkedCar->save();
+
+            return $parkedCar->toArray();
+        }
+
+        return [];
     }
 
     /**

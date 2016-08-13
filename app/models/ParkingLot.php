@@ -16,6 +16,8 @@ class ParkingLot extends Model
     public $spot;
     public $check_in;
     public $check_out;
+    public $duration;
+    public $amount;
 
     public function initialize() {
         $this->setSource('parking_lot');
@@ -48,11 +50,15 @@ class ParkingLot extends Model
      * @return bool
      */
     public static function hasCar(Cars $car) {
-        $hasCar = ParkingLot::findfirst([
+        $car = static::getCar($car);
+
+        return $car !== false;
+    }
+
+    public static function getCar(Cars $car) {
+        return ParkingLot::findfirst([
             'conditions' => 'car_id = :carId: AND check_out IS NULL',
             'bind'       => ['carId' => $car->id]
         ]);
-
-        return $hasCar !== false;
     }
 }

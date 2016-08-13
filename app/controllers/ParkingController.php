@@ -34,4 +34,22 @@ class ParkingController extends Controller
         echo json_encode($response);
         die;
     }
+
+    /**
+     * @Post('/unpark', name='unpark')
+     */
+    public function unparkAction() {
+        $request  = new Request();
+        $response = [];
+
+        $plate = $request->getPost('plate');
+
+        if (!is_null($plate)) {
+            $parking  = $this->di->getShared('parking');
+            $response = $parking->unparkCar($plate);
+        }
+
+        echo json_encode($response);
+        die;
+    }
 }
