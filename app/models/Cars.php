@@ -2,26 +2,46 @@
 
 namespace Models;
 
+use \Exception;
+
 use Phalcon\Mvc\Model;
+use Phalcon\Validation;
+use Phalcon\Validation\Validator\InclusionIn as InclusionInValidator;
+use Phalcon\Validation\Validator\Uniqueness;
+use Phalcon\Validation\Validator\Regex as RegexValidator;
 
 class Cars extends Model
 {
-
     public $id;
     public $type;
     public $license_plate;
 
-    private static $types = [
+    protected $types = [
         'small',
         'medium',
         'large',
         'super_sized'
-    ];
+    ];    
 
-    //TODO: validation
+    public function validation() {
+        $validator = new Validation();
 
-    public static function getTypes() {
-        return static::$types;
+        $validator->add('type', new InclusionInValidator([
+            'domain'  => $this->types,
+            'message' => 'Type must be: [' . implode($this->types, ', ') . ']'
+        ]));
+
+        $validator->add('license_plate', new Uniqueness([
+            'message' => "A car with the license plate '{$this->license_plate}' already exists"
+        ]));
+
+        $this->license_plate = strtoupper($this->license_plate);
+        $validator->add('license_plate', new RegexValidator([
+            'pattern' => '/^[A-Z0-9]*$/',
+            'message' => 'Licence plate has invalid characters'
+        ]));
+
+        return $this->validate($validator);
     }
 
     /**
@@ -32,18 +52,32 @@ class Cars extends Model
      * @return \Models\Cars
      */
     public static function getCar($type, $plate) {
+        // Try to find by license plate
         $car = Cars::findfirst([
-            'conditions' => 'license_plate = :plate:',
-            'bind'       => ['plate' => $plate]
+            'conditions' => 'license_plate = :plate: AND type = :type:',
+            'bind'       => ['plate' => $plate, 'type' => $type]
         ]);
 
+        // If none exists try to make a new car
         if ($car === false) {
             $car = new Cars();
             $car->assign([
                 'type'          => $type,
                 'license_plate' => $plate
             ]);
-            $car->save();
+            
+            if (!$car->save()) {
+                if (!empty($car->getMessages())) {
+                    $errors = [];
+                    foreach ($car->getMessages() as $message) {
+                        $errors[] = $message->getMessage();
+                    }
+
+                    throw new Exception(json_encode($errors));
+                }
+
+                return false;
+            }
         }
 
         return $car;
