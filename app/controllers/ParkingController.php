@@ -11,7 +11,7 @@ class ParkingController extends Controller
     /**
      * @Get('/', name='default')
      */
-    public function indexAction() {
+    public function indexAction() {       
         echo "Hello World";
         die;
     }
@@ -19,20 +19,23 @@ class ParkingController extends Controller
     /**
      * @Post('/park', name='park')
      */
-    public function parkAction() {
+    public function parkAction() {        
         $request  = new Request();
         $response = [];
-                
-        $type  = $request->getPost('type');
-        $plate = $request->getPost('plate');
+        
+        try {
+            $type  = $request->getPost('type');
+            $plate = $request->getPost('plate');
 
-        if (!is_null($type) && !is_null($plate)) {
-            $parking  = $this->di->getShared('parking');
-            $response = $parking->parkCar($type, $plate);
+            if (!is_null($type) && !is_null($plate)) {
+                $parking  = $this->di->getShared('parking');
+                $response = $parking->parkCar($type, $plate);
+            }
+        } catch (Exception $e) {
+            $response['error'] = $e->getMessage();
         }
 
         echo json_encode($response);
-        die;
     }
 
     /**
@@ -42,14 +45,17 @@ class ParkingController extends Controller
         $request  = new Request();
         $response = [];
 
-        $plate = $request->getPost('plate');
+        try {
+            $plate = $request->getPost('plate');
 
-        if (!is_null($plate)) {
-            $parking  = $this->di->getShared('parking');
-            $response = $parking->unparkCar($plate);
+            if (!is_null($plate)) {
+                $parking  = $this->di->getShared('parking');
+                $response = $parking->unparkCar($plate);
+            }
+        } catch (Exception $e) {
+            $response['error'] = $e->getMessage();
         }
 
         echo json_encode($response);
-        die;
     }
 }
