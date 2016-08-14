@@ -9,11 +9,25 @@ use Phalcon\Http\Request;
 class ParkingController extends Controller
 {
     /**
-     * @Get('/', name='default')
+     * @Get('/park', name='default')
      */
-    public function indexAction() {       
-        echo "Hello World";
-        die;
+    public function indexAction() {
+        $this->view->disable();
+        $request  = new Request();
+        $response = [];
+
+        try {
+            $plate = $request->get('plate');
+
+            if (!is_null($plate)) {
+                $parking  = $this->di->getShared('parking');
+                $response = $parking->unparkCar($plate, false);
+            }
+        } catch (Exception $e) {
+            $response['error'] = $e->getMessage();
+        }
+
+        echo json_encode($response);
     }
 
     /**
@@ -39,14 +53,14 @@ class ParkingController extends Controller
     }
 
     /**
-     * @Post('/unpark', name='unpark')
+     * @Put('/park', name='unpark')
      */
     public function unparkAction() {
         $request  = new Request();
         $response = [];
 
         try {
-            $plate = $request->getPost('plate');
+            $plate = $request->getPut('plate');
 
             if (!is_null($plate)) {
                 $parking  = $this->di->getShared('parking');

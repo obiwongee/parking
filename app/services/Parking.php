@@ -71,7 +71,7 @@ class Parking {
      * @param string $plate
      * @return array
      */
-    public function unparkCar($plate) {
+    public function unparkCar($plate, $save = true) {
         $car = Cars::findfirst([
             'conditions' => 'license_plate = :plate:',
             'bind'       => ['plate' => $plate]
@@ -95,7 +95,9 @@ class Parking {
             'duration'  => $duration,
             'amount'    => $amount
         ]);
-        $parkedCar->save();
+
+        if ($save)
+            $parkedCar->save();
 
         return $parkedCar->toArray();
     }
