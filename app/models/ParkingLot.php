@@ -50,12 +50,12 @@ class ParkingLot extends Model
      * @return bool
      */
     public static function hasCar(Cars $car) {
-        $car = static::getCar($car);
+        $car = static::getParkedCar($car);
 
         return $car !== false;
     }
 
-    public static function getCar(Cars $car) {
+    public static function getParkedCar(Cars $car) {
         return ParkingLot::findfirst([
             'conditions' => 'car_id = :carId: AND check_out IS NULL',
             'bind'       => ['carId' => $car->id]
