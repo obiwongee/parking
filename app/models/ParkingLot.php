@@ -27,7 +27,7 @@ class ParkingLot extends Model
      * Check how many used spots there are in the parking lot
      *
      * @param string $type
-     * @return type
+     * @return ParkingLot
      */
     public static function getUsed($type = null) {
         $query = ParkingLot::query()
@@ -55,6 +55,12 @@ class ParkingLot extends Model
         return $car !== false;
     }
 
+    /**
+     * Returns a parked car
+     *
+     * @param Cars $car
+     * @return Car
+     */
     public static function getParkedCar(Cars $car) {
         return ParkingLot::findfirst([
             'conditions' => 'car_id = :carId: AND check_out IS NULL',

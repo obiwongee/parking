@@ -6,27 +6,20 @@ use \Exception;
 
 use Models\ParkingLot;
 use Models\Cars;
+use Models\Fees;
 
 class Parking {
     protected $capacity;
+    protected $small = 10, $medium = 45, $large = 35, $superSized = 10;
 
-    protected $fee          = 2;
-    protected $maximumDaily = 15;
-
-    protected $small, $medium, $large, $superSized;
-
-    public function __construct($capacity, $small = 10, $medium = 45, $large = 35, $superSized = 10) {
-        if (($small + $medium + $large + $superSized) != 100)
+    public function __construct($capacity) {
+        if (($this->small + $this->medium + $this->large + $this->superSized) != 100)
             throw new Exception("Invalid parking lot distribution");
 
         if ($capacity < 1)
             throw new Exception("Invalid parking lot size");
-
-        $this->small      = $small;
-        $this->medium     = $medium;
-        $this->large      = $large;
-        $this->superSized = $superSized;
-        $this->capacity   = $capacity;
+        
+        $this->capacity = $capacity;
     }
 
     /**
@@ -40,16 +33,19 @@ class Parking {
         $response = [];
         $car      = Cars::getCar($type, $plate);
 
-        // If there is a valid car, it is not parked, there is space for it's type, and we got a spot
+        // If there is a valid car
         if ($car === false)
             throw new Exception("Car does not exist [$type, $plate]");
 
+        // The car is not already parked
         if ($this->isParked($car))
             throw new Exception("Car is already parked");
 
+        // There is space for that type of car
         if (!$this->hasSpaceByType($type))
             throw new Exception("There are no available spaces for $type cars");
 
+        // A free spot can be found
         if (($spot = $this->findFreeSpace()) === false)
             throw new Exception("Failed to find a free space");
         
@@ -80,15 +76,18 @@ class Parking {
         if ($car === false)
             throw new Exception("Car does not exist with license plate $plate");
 
-        if (($parkedCar = ParkingLot::getCar($car)) === false)
+        if (($parkedCar = ParkingLot::getParkedCar($car)) === false)
             throw new Exception("Car is not parked");
 
         $checkOut = date('Y-m-d H:i:s', time());
 
         // Calculate duration
+        if (($fees = Fees::getRate($parkedCar->check_in)) === false)
+            throw new Exception("Checkout fee unavailable for {$parkedCar->check_in}");
+
         $duration  = max(floor((strtotime($checkOut) - strtotime($parkedCar->check_in)) / 60), 1);
         $halfHours = ceil($duration / 30);
-        $amount    = $halfHours * $this->fee > $this->maximumDaily ? $this->maximumDaily : $halfHours * $this->fee;
+        $amount    = $halfHours * $fees->half_hour > $fees->max_daily ? $fees->max_daily : $halfHours * $fees->half_hour;
 
         $parkedCar->assign([
             'check_out' => $checkOut,
