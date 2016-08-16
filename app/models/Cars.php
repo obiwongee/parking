@@ -38,7 +38,11 @@ class Cars extends Model
         $this->license_plate = strtoupper($this->license_plate);
         $validator->add('license_plate', new RegexValidator([
             'pattern' => '/^[A-Z0-9]*$/',
-            'message' => 'Licence plate has invalid characters'
+            'message' => 'Licence plate must only be alphanumeric characters'
+        ]));
+        $validator->add('license_plate', new RegexValidator([
+            'pattern' => '/^[A-Z0-9]{6-7}$/',
+            'message' => 'Licence plate must be 6 or 7 alphanumeric characters'
         ]));
 
         return $this->validate($validator);
@@ -71,9 +75,9 @@ class Cars extends Model
                     $errors = [];
                     foreach ($car->getMessages() as $message) {
                         $errors[] = $message->getMessage();
-                    }
+                    }                    
 
-                    throw new Exception(json_encode($errors));
+                    throw new Exception(implode($errors, "\n"));
                 }
 
                 return false;
