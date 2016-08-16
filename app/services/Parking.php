@@ -60,7 +60,7 @@ class Parking
      * @param string $licensePlate
      * @return array
      */
-    public function unparkCar($parkingLotId, $licensePlate, $save = true) {
+    public function unparkCar($parkingLotId, $licensePlate) {
         $car = Cars::findfirst([
             'conditions' => 'license_plate = :plate:',
             'bind'       => ['plate' => $licensePlate]
@@ -80,15 +80,46 @@ class Parking
 
         // And the car is parked there
         if (($parkedCar = ParkingSpots::getParkedCar($car, $parkingLot)) === false)
-            throw new Exception("Car is not parked in {$parkingLot->name}");
-
-        $checkOut = date('Y-m-d H:i:s', time());
+            throw new Exception("Car is not parked in {$parkingLot->name}");        
 
         // Calculate duration
         if (($fees = Fees::getRate($parkedCar->check_in)) === false)
             throw new Exception("Checkout fee unavailable for {$parkedCar->check_in}");
 
-        $duration = max(floor((strtotime($checkOut) - strtotime($parkedCar->check_in)) / 60), 1);
+        $checkOut = date('Y-m-d H:i:s', time());
+        $duration = $this->getDuration($parkedCar->check_in, $checkOut);
+        $amount   = $this->getAmount($fees, $duration);
+
+        $parkedCar->assign([
+            'check_out' => $checkOut,
+            'duration'  => $duration,
+            'amount'    => $amount
+        ]);
+        $parkedCar->save();        
+
+        return $parkedCar->toArray() + ['parking_lot' => $parkingLot->toArray()] + ['car' => $car->toArray()];
+    }
+
+    public function findCar($licensePlate) {
+        $car = Cars::findfirst([
+            'conditions' => 'license_plate = :plate:',
+            'bind'       => ['plate' => $licensePlate]
+        ]);
+
+        // Make sure there is a car
+        if ($car === false)
+            throw new Exception("Car does not exist with license plate '$licensePlate'");
+
+        // And the car is parked there
+        if (($parkedCar = ParkingSpots::getParkedCar($car)) === false)
+            throw new Exception("Car is not parked in any lot");       
+
+        // Calculate duration
+        if (($fees = Fees::getRate($parkedCar->check_in)) === false)
+            throw new Exception("Checkout fee unavailable for {$parkedCar->check_in}");
+
+        $checkOut = date('Y-m-d H:i:s', time());
+        $duration = $this->getDuration($parkedCar->check_in, $checkOut);
         $amount   = $this->getAmount($fees, $duration);
 
         $parkedCar->assign([
@@ -97,10 +128,7 @@ class Parking
             'amount'    => $amount
         ]);
 
-        if ($save)
-            $parkedCar->save();        
-
-        return $parkedCar->toArray() + ['parking_lot' => $parkingLot->toArray()] + ['car' => $car->toArray()];
+        return $parkedCar->toArray() + ['parking_lot' => $parkedCar->ParkingLot->toArray()] + ['car' => $car->toArray()];
     }
 
     /**
@@ -138,6 +166,17 @@ class Parking
         $used    = ParkingSpots::getUsed($parkingLot, $type);
 
         return $allowed > count($used);
+    }
+
+    /**
+     * Get the duration the car has been parked in minutes
+     *
+     * @param string $checkIn
+     * @param string $checkOut
+     * @return int
+     */
+    protected function getDuration($checkIn, $checkOut) {
+        return max(floor((strtotime($checkOut) - strtotime($checkIn)) / 60), 1);
     }
 }
 

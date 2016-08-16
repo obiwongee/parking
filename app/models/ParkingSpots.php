@@ -22,6 +22,8 @@ class ParkingSpots extends Model
 
     public function initialize() {
         $this->setSource('parking_spots');
+
+        $this->belongsTo('parking_lot_id', 'Models\ParkingLots', 'id', ['alias' => 'ParkingLot']);
     }
 
     /**

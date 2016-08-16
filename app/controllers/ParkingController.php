@@ -17,12 +17,10 @@ class ParkingController extends Controller
         $response = [];
 
         try {
-            $plate = $request->get('plate');
+            $plate = $request->get('license_plate');
 
-            if (!is_null($plate)) {
-                $parking  = $this->di->getShared('parking');
-                $response = $parking->unparkCar($plate, false);
-            }
+            $parking  = $this->di->getShared('parking');
+            $response = $parking->findCar($plate);
         } catch (Exception $e) {
             $response['error'] = $e->getMessage();
         }
