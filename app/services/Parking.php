@@ -27,13 +27,11 @@ class Parking
             throw new Exception("Car does not exist [$type, $plate]");
 
         // The car is not already parked
-        $parkedCar = ParkingSpots::getParkedCar($car);
-        if ($parkedCar !== false)
+        if (($parkedCar = ParkingSpots::getParkedCar($car)) !== false)
             throw new Exception("Car is already parked");
 
-        // There is a valud parking lot
-        $parkingLot = ParkingLots::findfirst($parkingLotId);
-        if ($parkingLot === false)
+        // There is a valud parking lot        
+        if (($parkingLot = ParkingLots::findfirst($parkingLotId)) === false)
             throw new Exception("Invalid parking lot");
 
         // There is space for that type of car
@@ -66,12 +64,11 @@ class Parking
 
         if ($car === false)
             throw new Exception("Car does not exist with license plate $plate");
-
-        $parkingLot = ParkingLots::findfirst($parkingLotId);
-        if ($parkingLot === false)
+        
+        if (($parkingLot = ParkingLots::findfirst($parkingLotId)) === false)
             throw new Exception("Invalid parking lot");
 
-        if (($parkedCar = $parkingLot->getParkedCar($car)) === false)
+        if (($parkedCar = ParkingSpots::getParkedCar($car)) === false)
             throw new Exception("Car is not parked");
 
         $checkOut = date('Y-m-d H:i:s', time());
@@ -126,7 +123,7 @@ class Parking
         if (($space = $parkingLot->getSpaceForType($type)) === false)
             return false;
 
-        $allowed = floor($this->capacity * ($space / 100));
+        $allowed = floor($parkingLot->capacity * ($space / 100));
         $used    = ParkingSpots::getUsed($parkingLot, $type);
 
         return $allowed > count($used);
