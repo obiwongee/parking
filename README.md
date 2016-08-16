@@ -1,29 +1,73 @@
-# Phalcon Tutorial
+# Soapbox Parking App
 
-Phalcon is a web framework for PHP delivered as a C extension providing high
-performance and lower resource consumption.
-
-This is a very simple tutorial to understand the basis of work with Phalcon.
-
-Check out a [explanation article][1].
-
-## Get Started
+## Install
 
 ### Requirements
+* PHP
+* Mysql
+* Phalcon
+* Nginx
 
-To run this application on your machine, you need at least:
+### Instructions
 
-* PHP >= 5.4
-* [Apache][2] Web Server with [mod_rewrite][3] enabled or [Nginx][4] Web Server
-* Latest stable [Phalcon Framework release][5] extension enabled
+* Download and install [Phalcon][1] PHP framework
+* Clone repo to web root
+* Configure nginx
+```
+server {
+    listen      80;
+    server_name localhost.dev;
+    root        /var/www/parking/public;
+    index       index.php index.html index.htm;
 
-## License
+    location / {
+        try_files $uri $uri/ /index.php?_url=$uri&$args;
+    }
 
-Phalcon Tutorial is open-sourced software licensed under the [New BSD License][6]. © Phalcon Framework Team and contributors
+    location ~ \.php {
+        fastcgi_pass unix:/var/run/php5-fpm.sock;
+        fastcgi_index /index.php;
 
-[1]: http://docs.phalconphp.com/en/latest/reference/tutorial.html
-[2]: http://httpd.apache.org/
-[3]: http://httpd.apache.org/docs/current/mod/mod_rewrite.html
-[4]: http://nginx.org/
-[5]: https://github.com/phalcon/cphalcon/releases
-[6]: https://github.com/phalcon/tutorial/blob/master/docs/LICENSE.md
+        include fastcgi_params;
+        fastcgi_split_path_info       ^(.+\.php)(/.+)$;
+        fastcgi_param PATH_INFO       $fastcgi_path_info;
+        fastcgi_param PATH_TRANSLATED $document_root$fastcgi_path_info;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+
+```
+* Configure /etc/hosts file if necessary
+* Restore mySQL DB from the schema directory
+* Configure mySQL in public/index.php
+
+## API Usage
+### Park a car
+**POST** http://localhost.dev/api/parking/park
+
+**Params**
+* parking_lot_id - int
+* type - string (small, medium, large, super_size)
+* license_plate - string (6-7 alphanumeric characters)
+
+### Unpark a car
+**PUT** http://localhost.dev/api/parking/park
+
+**Params**
+* parking_lot_id - int
+* license_plate - string (6-7 alphanumeric characters)
+
+### Get car status
+**GET** http://localhost.dev/api/parking/park
+
+**Params**
+* license_plate - string (6-7 alphanumeric characters)
+
+## UI
+**URL**: http://localhost.dev/parking
+
+[1]: https://phalconphp.com/en/download
