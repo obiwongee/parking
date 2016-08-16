@@ -4,24 +4,13 @@ namespace Services;
 
 use \Exception;
 
-use Models\ParkingLot;
+use Models\ParkingSpots;
+use Models\ParkingLots;
 use Models\Cars;
 use Models\Fees;
 
-class Parking {
-    protected $capacity;
-    protected $small = 10, $medium = 45, $large = 35, $superSized = 10;
-
-    public function __construct($capacity) {
-        if (($this->small + $this->medium + $this->large + $this->superSized) != 100)
-            throw new Exception("Invalid parking lot distribution");
-
-        if ($capacity < 1)
-            throw new Exception("Invalid parking lot size");
-        
-        $this->capacity = $capacity;
-    }
-
+class Parking
+{
     /**
      * Park a car in the parking lot
      *
@@ -29,7 +18,7 @@ class Parking {
      * @param string $plate
      * @return array
      */
-    public function parkCar($type, $plate) {
+    public function parkCar($parkingLotId, $type, $plate) {
         $response = [];
         $car      = Cars::getCar($type, $plate);
 
@@ -38,27 +27,29 @@ class Parking {
             throw new Exception("Car does not exist [$type, $plate]");
 
         // The car is not already parked
-        if ($this->isParked($car))
+        $parkedCar = ParkingSpots::getParkedCar($car);
+        if ($parkedCar !== false)
             throw new Exception("Car is already parked");
 
-        // There is space for that type of car
-        if (!$this->hasSpaceByType($type))
-            throw new Exception("There are no available spaces for $type cars");
+        // There is a valud parking lot
+        $parkingLot = ParkingLots::findfirst($parkingLotId);
+        if ($parkingLot === false)
+            throw new Exception("Invalid parking lot");
 
-        // A free spot can be found
-        if (($spot = $this->findFreeSpace()) === false)
-            throw new Exception("Failed to find a free space");
+        // There is space for that type of car
+        if (!$this->hasSpaceByType($parkingLot, $type))
+            throw new Exception("There are no available spaces for $type cars");
         
         // Park the car
-        $parkingLot = new ParkingLot();
-        $parkingLot->assign([
-            'car_id'   => $car->id,
-            'spot'     => $spot,
-            'check_in' => date('Y-m-d H:i:s', time())
+        $parkingSpot = new ParkingSpots();
+        $parkingSpot->assign([
+            'parking_lot_id' => $parkingLot->id,
+            'car_id'         => $car->id,
+            'check_in'       => date('Y-m-d H:i:s', time())
         ]);
-        $parkingLot->save();
+        $parkingSpot->save();
 
-        return $parkingLot->toArray();
+        return $parkingSpot->toArray();
     }
 
     /**
@@ -67,7 +58,7 @@ class Parking {
      * @param string $plate
      * @return array
      */
-    public function unparkCar($plate, $save = true) {
+    public function unparkCar($parkingLotId, $plate, $save = true) {
         $car = Cars::findfirst([
             'conditions' => 'license_plate = :plate:',
             'bind'       => ['plate' => $plate]
@@ -76,7 +67,11 @@ class Parking {
         if ($car === false)
             throw new Exception("Car does not exist with license plate $plate");
 
-        if (($parkedCar = ParkingLot::getParkedCar($car)) === false)
+        $parkingLot = ParkingLots::findfirst($parkingLotId);
+        if ($parkingLot === false)
+            throw new Exception("Invalid parking lot");
+
+        if (($parkedCar = $parkingLot->getParkedCar($car)) === false)
             throw new Exception("Car is not parked");
 
         $checkOut = date('Y-m-d H:i:s', time());
@@ -85,9 +80,8 @@ class Parking {
         if (($fees = Fees::getRate($parkedCar->check_in)) === false)
             throw new Exception("Checkout fee unavailable for {$parkedCar->check_in}");
 
-        $duration  = max(floor((strtotime($checkOut) - strtotime($parkedCar->check_in)) / 60), 1);
-        $halfHours = ceil($duration / 30);
-        $amount    = $halfHours * $fees->half_hour > $fees->max_daily ? $fees->max_daily : $halfHours * $fees->half_hour;
+        $duration = max(floor((strtotime($checkOut) - strtotime($parkedCar->check_in)) / 60), 1);
+        $amount   = $this->getAmount($fees, $duration);
 
         $parkedCar->assign([
             'check_out' => $checkOut,
@@ -102,22 +96,24 @@ class Parking {
     }
 
     /**
-     * Find the first free spot in the parking lot
      *
-     * @return the parking spot number or false if there is none available
+     * @param Fees $fees
+     * @param int $duration duration in minutes
+     * @return float
      */
-    protected function findFreeSpace() {
-        $spots = ParkingLot::getUsed();
+    protected function getAmount(Fees $fees, $duration) {       
+        $amount    = 0;
+        $halfHours = ceil($duration / 30);
+        $days      = floor($halfHours / 48);
 
-        if (count($spots) >= $this->capacity)
-            return false;
-
-        for($i = 0; $i < $this->capacity; $i++) {
-            if (!isset($spots[$i]) || $spots[$i]->spot != $i)
-                return $i;
+        if ($days > 0) {
+            $amount    = $days * $fees->max_daily;
+            $halfHours = $halfHours - ($days * 48);
         }
 
-        return false;
+        $amount += $halfHours * $fees->half_hour > $fees->max_daily ? $fees->max_daily : $halfHours * $fees->half_hour;
+
+        return $amount;
     }
 
     /**
@@ -126,24 +122,14 @@ class Parking {
      * @param string $type
      * @return boolean
      */
-    protected function hasSpaceByType($type) {
-        if (!isset($this->{$type}))
+    protected function hasSpaceByType(ParkingLots $parkingLot, $type = null) {
+        if (($space = $parkingLot->getSpaceForType($type)) === false)
             return false;
 
-        $allowed = floor($this->capacity * ($this->{$type} / 100));
-        $used    = ParkingLot::getUsed($type);
+        $allowed = floor($this->capacity * ($space / 100));
+        $used    = ParkingSpots::getUsed($parkingLot, $type);
 
         return $allowed > count($used);
-    }
-
-    /**
-     * Check a car is currently parked in the parking lot
-     *
-     * @param Cars $car
-     * @return bool
-     */
-    protected function isParked(Cars $car) {
-        return ParkingLot::hasCar($car);
     }
 }
 

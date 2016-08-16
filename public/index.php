@@ -60,7 +60,7 @@ try {
 
     // Initialize Parking service
     $di->setShared('parking', function() {
-        return new Parking(100);
+        return new Parking();
     });
 
     // Handle the request
