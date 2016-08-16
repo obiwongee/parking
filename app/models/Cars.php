@@ -16,7 +16,7 @@ class Cars extends Model
     public $type;
     public $license_plate;
 
-    protected $types = [
+    protected static $types = [
         'small',
         'medium',
         'large',
@@ -27,8 +27,8 @@ class Cars extends Model
         $validator = new Validation();
 
         $validator->add('type', new InclusionInValidator([
-            'domain'  => $this->types,
-            'message' => 'Type must be: [' . implode($this->types, ', ') . ']'
+            'domain'  => static::$types,
+            'message' => 'Type must be: [' . implode(static::$types, ', ') . ']'
         ]));
 
         $validator->add('license_plate', new Uniqueness([
@@ -41,7 +41,7 @@ class Cars extends Model
             'message' => 'Licence plate must only be alphanumeric characters'
         ]));
         $validator->add('license_plate', new RegexValidator([
-            'pattern' => '/^[A-Z0-9]{6-7}$/',
+            'pattern' => '/^[A-Z0-9]{6,7}$/',
             'message' => 'Licence plate must be 6 or 7 alphanumeric characters'
         ]));
 
@@ -85,5 +85,9 @@ class Cars extends Model
         }
 
         return $car;
+    }
+
+    public static function getTypes() {
+        return static::$types;
     }
 }

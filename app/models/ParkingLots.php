@@ -33,4 +33,8 @@ class ParkingLots extends Model
 
         return $this->{$type};
     }
+
+    public static function getParkingLots() {
+        return ParkingLots::find();
+    }
 }

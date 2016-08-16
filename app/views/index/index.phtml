@@ -25,32 +25,34 @@
 
             $(document).ready(function() {
                 $('#checkin-btn').on('click', function() {
+                    var lot   = $('#checkin_parking_lot').val();
                     var plate = $('#checkin_license_plate').val();
-                    var type = $('#type').val();
+                    var type  = $('#type').val();
 
                     $.ajax({
                         url: '/api/parking/park',
                         method: 'POST',
-                        data: { plate: plate, type: type },
+                        data: { parking_lot_id: lot, license_plate: plate, type: type },
                         success: function(response) {
                             var json = JSON.parse(response);
 
                             if (json.hasOwnProperty('error')) {
                                 errorMessage(json.error.replace("\n", "<br/>"));
                             } else {
-                                successMessage("Car has checked in at " + json.check_in + " in spot: " + json.spot);
+                                successMessage("Car has checked in at " + json.check_in + " in " + json.parking_lot.name);
                             }
                         }
                     });
                 });
 
                 $('#checkout-btn').on('click', function() {
+                    var lot   = $('#checkout_parking_lot').val();
                     var plate = $('#checkout_license_plate').val();
 
                     $.ajax({
                         url: '/api/parking/park',
                         method: 'PUT',
-                        data: { plate: plate },
+                        data: { parking_lot_id: lot, license_plate: plate },
                         success: function(response) {
                             var json = JSON.parse(response);
 
@@ -113,15 +115,27 @@
 
                     <form class="inline-form">
                         <div class="form-group">
+                            <label for="checkin_parking_lot">Parking Lot</label>
+                            <select id="checkin_parking_lot" class="form-control">
+                                <?php
+                                    foreach ($parkingLots as $parkingLot) {
+                                        echo "<option value='{$parkingLot->id}'>{$parkingLot->name}</option>";
+                                    }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label for="license_plate">License Plate</label>
                             <input type="text" id='checkin_license_plate' class="form-control" default="License Plate"/>
                         </div>
                         <div class="form-group">
                             <label for='type'>Car Type</label>
                             <select id='type' class="form-control">
-                                <option value='small'>Small</option>
-                                <option value='medium'>Medium</option>
-                                <option value='xtra-large'>Extra Large</option>
+                                <?php
+                                    foreach ($types as $type) {
+                                        echo "<option value='$type'>" . ucwords(str_replace('_', ' ', $type)) . "</option>";
+                                    }
+                                ?>
                             </select>                            
                         </div>
                         <div class="form-group">
@@ -138,6 +152,16 @@
                     <h2>Check Out</h2>
 
                     <form class="inline-form">
+                        <div class="form-group">
+                            <label for="checkout_parking_lot">Parking Lot</label>
+                            <select id="checkout_parking_lot" class="form-control">
+                                <?php
+                                    foreach ($parkingLots as $parkingLot) {
+                                        echo "<option value='{$parkingLot->id}'>{$parkingLot->name}</option>";
+                                    }
+                                ?>
+                            </select>
+                        </div>
                         <div class="form-group">
                             <label for="license_plate">License Plate</label>
                             <input type="text" id='checkout_license_plate' class="form-control" default="License Plate"/>

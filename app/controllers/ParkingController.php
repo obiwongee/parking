@@ -40,12 +40,10 @@ class ParkingController extends Controller
         try {
             $parkingLotId = $request->getPost('parking_lot_id');
             $type         = $request->getPost('type');
-            $plate        = $request->getPost('plate');
+            $licensePlate = $request->getPost('license_plate');
 
-            if (!is_null($parkingLotId) && !is_null($type) && !is_null($plate)) {
-                $parking  = $this->di->getShared('parking');
-                $response = $parking->parkCar($parkingLotId, $type, $plate);
-            }
+            $parking  = $this->di->getShared('parking');
+            $response = $parking->parkCar($parkingLotId, $type, $licensePlate);
         } catch (Exception $e) {
             $response['error'] = $e->getMessage();
         }
@@ -62,12 +60,10 @@ class ParkingController extends Controller
 
         try {
             $parkingLotId = $request->getPut('parking_lot_id');
-            $plate        = $request->getPut('plate');
+            $licensePlate = $request->getPut('license_plate');
 
-            if (!is_null($parkingLotId) && !is_null($plate)) {
-                $parking  = $this->di->getShared('parking');
-                $response = $parking->unparkCar($parkingLotId, $plate);
-            }
+            $parking  = $this->di->getShared('parking');
+            $response = $parking->unparkCar($parkingLotId, $licensePlate);
         } catch (Exception $e) {
             $response['error'] = $e->getMessage();
         }

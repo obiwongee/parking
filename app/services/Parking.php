@@ -15,23 +15,27 @@ class Parking
      * Park a car in the parking lot
      *
      * @param string $type
-     * @param string $plate
+     * @param string $licensePlate
      * @return array
      */
-    public function parkCar($parkingLotId, $type, $plate) {
+    public function parkCar($parkingLotId, $type, $licensePlate) {
         $response = [];
-        $car      = Cars::getCar($type, $plate);
+        $car      = Cars::getCar($type, $licensePlate);
 
         // If there is a valid car
         if ($car === false)
-            throw new Exception("Car does not exist [$type, $plate]");
+            throw new Exception("Car does not exist [$type, $licensePlate]");
 
         // The car is not already parked
         if (($parkedCar = ParkingSpots::getParkedCar($car)) !== false)
             throw new Exception("Car is already parked");
 
-        // There is a valud parking lot        
-        if (($parkingLot = ParkingLots::findfirst($parkingLotId)) === false)
+        // There is a valud parking lot
+        $params = [
+            'conditions' => 'id = :id:',
+            'bind'       => ['id' => $parkingLotId]
+        ];
+        if (empty($parkingLotId) || ($parkingLot = ParkingLots::findfirst($params)) === false)
             throw new Exception("Invalid parking lot");
 
         // There is space for that type of car
@@ -47,29 +51,36 @@ class Parking
         ]);
         $parkingSpot->save();
 
-        return $parkingSpot->toArray();
+        return $parkingSpot->toArray() + ['parking_lot' => $parkingLot->toArray()] + ['car' => $car->toArray()];
     }
 
     /**
      * Unpark a car from the parking lot
      *
-     * @param string $plate
+     * @param string $licensePlate
      * @return array
      */
-    public function unparkCar($parkingLotId, $plate, $save = true) {
+    public function unparkCar($parkingLotId, $licensePlate, $save = true) {
         $car = Cars::findfirst([
             'conditions' => 'license_plate = :plate:',
-            'bind'       => ['plate' => $plate]
+            'bind'       => ['plate' => $licensePlate]
         ]);
 
+        // Make sure there is a car
         if ($car === false)
-            throw new Exception("Car does not exist with license plate $plate");
-        
-        if (($parkingLot = ParkingLots::findfirst($parkingLotId)) === false)
+            throw new Exception("Car does not exist with license plate '$licensePlate'");
+
+        // And there is a parking lot
+        $params = [
+            'conditions' => 'id = :id:',
+            'bind'       => ['id' => $parkingLotId]
+        ];
+        if (empty($parkingLotId) || ($parkingLot = ParkingLots::findfirst($params)) === false)
             throw new Exception("Invalid parking lot");
 
-        if (($parkedCar = ParkingSpots::getParkedCar($car)) === false)
-            throw new Exception("Car is not parked");
+        // And the car is parked there
+        if (($parkedCar = ParkingSpots::getParkedCar($car, $parkingLot)) === false)
+            throw new Exception("Car is not parked in {$parkingLot->name}");
 
         $checkOut = date('Y-m-d H:i:s', time());
 
@@ -87,9 +98,9 @@ class Parking
         ]);
 
         if ($save)
-            $parkedCar->save();
+            $parkedCar->save();        
 
-        return $parkedCar->toArray();
+        return $parkedCar->toArray() + ['parking_lot' => $parkingLot->toArray()] + ['car' => $car->toArray()];
     }
 
     /**
