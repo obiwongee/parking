@@ -26,7 +26,8 @@ try {
     // Register namespaces
     $loader->registerNamespaces([
         'Models'   => '../app/models',
-        'Services' => '../app/services'
+        'Services' => '../app/services',
+        'Library'  => '../app/library'
     ]);
 
     // Create a DI

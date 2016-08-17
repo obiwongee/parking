@@ -2,7 +2,7 @@
 
 namespace Services;
 
-use \Exception;
+use Library\ParkingException;
 
 use Models\ParkingSpots;
 use Models\ParkingLots;
@@ -24,11 +24,11 @@ class Parking
 
         // If there is a valid car
         if ($car === false)
-            throw new Exception("Car does not exist [$type, $licensePlate]");
+            new ParkingException("Car does not exist [$type, $licensePlate]");
 
         // The car is not already parked
         if (($parkedCar = ParkingSpots::getParkedCar($car)) !== false)
-            throw new Exception("Car is already parked");
+            new ParkingException("Car is already parked");
 
         // There is a valud parking lot
         $params = [
@@ -36,11 +36,11 @@ class Parking
             'bind'       => ['id' => $parkingLotId]
         ];
         if (empty($parkingLotId) || ($parkingLot = ParkingLots::findfirst($params)) === false)
-            throw new Exception("Invalid parking lot");
+            new ParkingException("Invalid parking lot");
 
         // There is space for that type of car
         if (!$this->hasSpaceByType($parkingLot, $type))
-            throw new Exception("There are no available spaces for $type cars");
+            new ParkingException("There are no available spaces for $type cars");
         
         // Park the car
         $parkingSpot = new ParkingSpots();
@@ -68,7 +68,7 @@ class Parking
 
         // Make sure there is a car
         if ($car === false)
-            throw new Exception("Car does not exist with license plate '$licensePlate'");
+            new ParkingException("Car does not exist with license plate '$licensePlate'");
 
         // And there is a parking lot
         $params = [
@@ -76,15 +76,15 @@ class Parking
             'bind'       => ['id' => $parkingLotId]
         ];
         if (empty($parkingLotId) || ($parkingLot = ParkingLots::findfirst($params)) === false)
-            throw new Exception("Invalid parking lot");
+            new ParkingException("Invalid parking lot");
 
         // And the car is parked there
         if (($parkedCar = ParkingSpots::getParkedCar($car, $parkingLot)) === false)
-            throw new Exception("Car is not parked in {$parkingLot->name}");        
+            new ParkingException("Car is not parked in {$parkingLot->name}");
 
         // Calculate duration
         if (($fees = Fees::getRate($parkedCar->check_in)) === false)
-            throw new Exception("Checkout fee unavailable for {$parkedCar->check_in}");
+            new ParkingException("Checkout fee unavailable for {$parkedCar->check_in}");
 
         $checkOut = date('Y-m-d H:i:s', time());
         $duration = $this->getDuration($parkedCar->check_in, $checkOut);
@@ -108,15 +108,15 @@ class Parking
 
         // Make sure there is a car
         if ($car === false)
-            throw new Exception("Car does not exist with license plate '$licensePlate'");
+            new ParkingException("Car does not exist with license plate '$licensePlate'");
 
         // And the car is parked there
         if (($parkedCar = ParkingSpots::getParkedCar($car)) === false)
-            throw new Exception("Car is not parked in any lot");       
+            new ParkingException("Car is not parked in any lot");
 
         // Calculate duration
         if (($fees = Fees::getRate($parkedCar->check_in)) === false)
-            throw new Exception("Checkout fee unavailable for {$parkedCar->check_in}");
+            new ParkingException("Checkout fee unavailable for {$parkedCar->check_in}");
 
         $checkOut = date('Y-m-d H:i:s', time());
         $duration = $this->getDuration($parkedCar->check_in, $checkOut);

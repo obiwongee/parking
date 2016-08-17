@@ -2,7 +2,7 @@
 
 namespace Models;
 
-use \Exception;
+use Library\ParkingException;
 
 use Phalcon\Mvc\Model;
 use Phalcon\Validation;
@@ -77,7 +77,7 @@ class Cars extends Model
                         $errors[] = $message->getMessage();
                     }                    
 
-                    throw new Exception(implode($errors, "\n"));
+                    new ParkingException($errors);
                 }
 
                 return false;

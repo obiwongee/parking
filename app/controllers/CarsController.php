@@ -8,5 +8,6 @@ class CarsController extends Controller
         foreach (Cars::find() as $car) {
             var_dump($car->toArray());
         }
+        die;
     }
 }

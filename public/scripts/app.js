@@ -1,4 +1,18 @@
-function errorMessage(message) {
+function errorMessage(errors) {        
+    var message = '';   
+    
+    try {
+        var json = JSON.parse(errors)
+    } catch (e) {}   
+    
+    if (json) {        
+        for (i in json) {
+            message += json[i] + "<br/>";
+        }        
+    } else {
+        message = errors;
+    }
+    
     $('#error-dialog .modal-body').html(message);
     $('#error-dialog').modal('show');
 }
@@ -22,7 +36,7 @@ $(document).ready(function() {
                 var json = JSON.parse(response);
 
                 if (json.hasOwnProperty('error')) {
-                    errorMessage(json.error.replace("\n", "<br/>"));
+                    errorMessage(json.error);
                 } else {
                     successMessage("Car has checked in at " + json.check_in + " in " + json.parking_lot.name);
                 }
@@ -42,9 +56,13 @@ $(document).ready(function() {
                 var json = JSON.parse(response);
 
                 if (json.hasOwnProperty('error')) {
-                    errorMessage(json.error.replace("\n", "<br/>"));
+                    errorMessage(json.error);
                 } else {
-                    successMessage("Car has checked out at " + json.check_out + ". Duration: " + json.duration + " minute(s) for $" + json.amount);
+                    var duration = json.duration;
+                    var hours    = Math.floor((duration / 60));
+                    var minutes  = duration - (hours * 60);
+                    
+                    successMessage("Car has checked out at " + json.check_out + ". Duration: " + hours + " hours and " + minutes + " minute(s) for $" + json.amount);
                 }
             }
         });
@@ -61,9 +79,13 @@ $(document).ready(function() {
                 var json = JSON.parse(response);
 
                 if (json.hasOwnProperty('error')) {
-                    errorMessage(json.error.replace("\n", "<br/>"));
+                    errorMessage(json.error);
                 } else {
-                    successMessage("Car is at " + json.parking_lot.name + ". Checked in at: " + json.check_in + " Duration: " + json.duration + " minute(s) for $" + json.amount);
+                    var duration = json.duration;
+                    var hours    = Math.floor((duration / 60));
+                    var minutes  = duration - (hours * 60);                    
+                    
+                    successMessage("Car is at " + json.parking_lot.name + ". Checked in at: " + json.check_in + " Duration: " + hours + " hours and " + minutes + " minute(s) for $" + json.amount);
                 }
             }
         });        
