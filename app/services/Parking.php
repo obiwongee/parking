@@ -20,15 +20,6 @@ class Parking
      */
     public function parkCar($parkingLotId, $type, $licensePlate) {
         $response = [];
-        $car      = Cars::getCar($type, $licensePlate);
-
-        // If there is a valid car
-        if ($car === false)
-            new ParkingException("Car does not exist [$type, $licensePlate]");
-
-        // The car is not already parked
-        if (($parkedCar = ParkingSpots::getParkedCar($car)) !== false)
-            new ParkingException("Car is already parked");
 
         // There is a valud parking lot
         $params = [
@@ -41,6 +32,14 @@ class Parking
         // There is space for that type of car
         if (!$this->hasSpaceByType($parkingLot, $type))
             new ParkingException("There are no available spaces for $type cars");
+
+        // If there is a valid car
+        if (($car = Cars::getCar($type, $licensePlate)) === false)
+            new ParkingException("Car does not exist [$type, $licensePlate]");
+
+        // The car is not already parked
+        if (($parkedCar = ParkingSpots::getParkedCar($car)) !== false)
+            new ParkingException("Car is already parked");
         
         // Park the car
         $parkingSpot = new ParkingSpots();
