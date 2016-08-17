@@ -60,13 +60,8 @@ class Parking
      * @return array
      */
     public function unparkCar($parkingLotId, $licensePlate) {
-        $car = Cars::findfirst([
-            'conditions' => 'license_plate = :plate:',
-            'bind'       => ['plate' => $licensePlate]
-        ]);
-
         // Make sure there is a car
-        if ($car === false)
+        if (($car = Cars::getCarByPlate($licensePlate)) === false)
             new ParkingException("Car does not exist with license plate '$licensePlate'");
 
         // And there is a parking lot
@@ -100,13 +95,8 @@ class Parking
     }
 
     public function findCar($licensePlate) {
-        $car = Cars::findfirst([
-            'conditions' => 'license_plate = :plate:',
-            'bind'       => ['plate' => $licensePlate]
-        ]);
-
         // Make sure there is a car
-        if ($car === false)
+        if (($car = Cars::getCarByPlate($licensePlate)) === false)
             new ParkingException("Car does not exist with license plate '$licensePlate'");
 
         // And the car is parked there

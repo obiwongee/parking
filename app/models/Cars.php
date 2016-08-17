@@ -35,7 +35,6 @@ class Cars extends Model
             'message' => "A car with the license plate '{$this->license_plate}' already exists"
         ]));
 
-        $this->license_plate = strtoupper($this->license_plate);
         $validator->add('license_plate', new RegexValidator([
             'pattern' => '/^[A-Z0-9]*$/',
             'message' => 'Licence plate must only be alphanumeric characters'
@@ -52,14 +51,16 @@ class Cars extends Model
      * Get a car object or create one if it does not exist
      *
      * @param string $type
-     * @param string $plate
+     * @param string $licensePlate
      * @return \Models\Cars
      */
-    public static function getCar($type, $plate) {
+    public static function getCar($type, $licensePlate) {
+        $licensePlate = static::cleanPlate($licensePlate);
+
         // Try to find by license plate
         $car = Cars::findfirst([
             'conditions' => 'license_plate = :plate: AND type = :type:',
-            'bind'       => ['plate' => $plate, 'type' => $type]
+            'bind'       => ['plate' => $licensePlate, 'type' => $type]
         ]);
 
         // If none exists try to make a new car
@@ -67,7 +68,7 @@ class Cars extends Model
             $car = new Cars();
             $car->assign([
                 'type'          => $type,
-                'license_plate' => $plate
+                'license_plate' => $licensePlate
             ]);
             
             if (!$car->save()) {
@@ -88,11 +89,37 @@ class Cars extends Model
     }
 
     /**
+     * Find a car by license plate
+     *
+     * @param string $licensePlate
+     * @return mixed Cars if found, false if not found
+     */
+    public static function getCarByPlate($licensePlate) {
+        return $car = Cars::findfirst([
+            'conditions' => 'license_plate = :plate:',
+            'bind'       => ['plate' => static::cleanPlate($licensePlate)]
+        ]);
+    }
+
+    /**
      * Get a list of all types
      *
      * @return array
      */
     public static function getTypes() {
         return static::$types;
+    }
+
+    /**
+     * Remove spaces and convert license plate to upper case
+     *
+     * @param string $licensePlate
+     * @return string
+     */
+    protected static function cleanPlate($licensePlate) {
+        $licensePlate = trim(str_replace(' ', '', $licensePlate));
+        $licensePlate = strtoupper($licensePlate);
+
+        return $licensePlate;
     }
 }
