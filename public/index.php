@@ -34,12 +34,11 @@ try {
     $di = new FactoryDefault();
 
     // Set the database service
-    // TODO: remove credentials
     $di['db'] = function() {
         return new DbAdapter(array(
             "host"     => "localhost",
-            "username" => "soapbox",
-            "password" => "soapbox",
+            "username" => "",
+            "password" => "",
             "dbname"   => "parking"
         ));
     };
