@@ -87,6 +87,11 @@ class Cars extends Model
         return $car;
     }
 
+    /**
+     * Get a list of all types
+     *
+     * @return array
+     */
     public static function getTypes() {
         return static::$types;
     }

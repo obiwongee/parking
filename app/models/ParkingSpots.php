@@ -30,6 +30,7 @@ class ParkingSpots extends Model
      * Returns a parked car
      *
      * @param Cars $car
+     * @param ParkingLots $parkingLot
      * @return mixed Car object on sucess or else false
      */
     public static function getParkedCar(Cars $car, ParkingLots $parkingLot = null) {
@@ -56,6 +57,7 @@ class ParkingSpots extends Model
     /**
      * Check how many used spots there are in the parking lot
      *
+     * @param ParkingLots $parkingLot
      * @param string $type
      * @return ParkingSpots
      */
