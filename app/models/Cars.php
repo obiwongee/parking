@@ -55,13 +55,8 @@ class Cars extends Model
      * @return \Models\Cars
      */
     public static function getCar($type, $licensePlate) {
-        $licensePlate = static::cleanPlate($licensePlate);
-
         // Try to find by license plate
-        $car = Cars::findfirst([
-            'conditions' => 'license_plate = :plate: AND type = :type:',
-            'bind'       => ['plate' => $licensePlate, 'type' => $type]
-        ]);
+        $car = static::getCarByPlate($licensePlate);
 
         // If none exists try to make a new car
         if ($car === false) {
@@ -82,6 +77,13 @@ class Cars extends Model
                 }
 
                 return false;
+            }
+        } else {
+            if ($car->type != $type) {
+                $car->assign([
+                    'type' => $type
+                ]);
+                $car->update();
             }
         }
 
