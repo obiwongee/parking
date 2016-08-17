@@ -29,6 +29,10 @@ class Parking
         if (empty($parkingLotId) || ($parkingLot = ParkingLots::findfirst($params)) === false)
             new ParkingException("Invalid parking lot");
 
+        // Validate type
+        if (!in_array($type, Cars::getTypes()))
+            new ParkingException("Type must be one of [" . implode(Cars::getTypes(), ', ') . "]");
+
         // There is space for that type of car
         if (!$this->hasSpaceByType($parkingLot, $type))
             new ParkingException("There are no available spaces for $type cars");
@@ -39,7 +43,7 @@ class Parking
 
         // The car is not already parked
         if (($parkedCar = ParkingSpots::getParkedCar($car)) !== false)
-            new ParkingException("Car is already parked");
+            new ParkingException("Car is already parked at {$parkedCar->ParkingLot->name}");
         
         // Park the car
         $parkingSpot = new ParkingSpots();
